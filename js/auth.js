@@ -41,8 +41,6 @@ const NovaAuth = (() => {
       dropdownEmail: document.getElementById('dropdownEmail'),
       dropdownAvatar: document.getElementById('dropdownAvatar'),
       dropdownSignOut: document.getElementById('dropdownSignOut'),
-      dropdownAdmin: document.getElementById('dropdownAdmin'),
-      sidebarAdmin: document.getElementById('sidebarAdmin'),
       sidebarSignOut: document.getElementById('sidebarSignOut'),
       profileTrigger: document.getElementById('profileTrigger'),
       commentSubmitBtn: document.getElementById('commentSubmitBtn')
@@ -107,13 +105,6 @@ const NovaAuth = (() => {
     /* Dropdown actions */
     els.dropdownSignOut.addEventListener('click', handleSignOut);
     els.sidebarSignOut.addEventListener('click', handleSignOut);
-    els.dropdownAdmin.addEventListener('click', () => {
-      closeProfileDropdown();
-      NovaApp.switchTab('admin');
-    });
-    els.sidebarAdmin.addEventListener('click', () => {
-      NovaApp.switchTab('admin');
-    });
 
     /* Close dropdown on resize */
     window.addEventListener('resize', closeProfileDropdown);
@@ -252,11 +243,6 @@ const NovaAuth = (() => {
       els.dropdownName.textContent = user.name;
       els.dropdownEmail.textContent = user.email;
       els.dropdownAvatar.textContent = user.name.charAt(0).toUpperCase();
-
-      /* Admin controls */
-      const showAdmin = user.isAdmin;
-      els.dropdownAdmin.style.display = showAdmin ? 'flex' : 'none';
-      els.sidebarAdmin.style.display = showAdmin ? 'flex' : 'none';
     } else {
       els.navAuthBtns.style.display = 'flex';
       els.navProfile.style.display = 'none';

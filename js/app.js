@@ -38,13 +38,6 @@ const NovaApp = (() => {
       commentInput: document.getElementById('commentInput'),
       commentSubmitBtn: document.getElementById('commentSubmitBtn'),
       commentCount: document.getElementById('commentCount'),
-      publishBtn: document.getElementById('publishArticleBtn'),
-      articleTitle: document.getElementById('articleTitle'),
-      articleCategory: document.getElementById('articleCategory'),
-      articleExcerpt: document.getElementById('articleExcerpt'),
-      articleContent: document.getElementById('articleContent'),
-      articleImage: document.getElementById('articleImage'),
-      adminArticlesList: document.getElementById('adminArticlesList'),
       toastContainer: document.getElementById('toastContainer')
     };
 
@@ -56,7 +49,6 @@ const NovaApp = (() => {
     initAuth();
     renderHome();
     renderTopics();
-    renderAdminArticles();
   }
 
   /* ─── SHAKE ANIMATION ─── */
@@ -111,9 +103,6 @@ const NovaApp = (() => {
       }
     });
 
-    /* Admin publish */
-    els.publishBtn.addEventListener('click', publishArticle);
-
     /* Theme switch */
     els.themeSwitch.addEventListener('click', toggleTheme);
 
@@ -136,26 +125,11 @@ const NovaApp = (() => {
   /* ─── AUTH INIT ─── */
   function initAuth() {
     NovaAuth.init();
-    NovaAuth.onAuthChange((user) => {
-      /* Refresh admin content when auth changes */
-      if (user && user.isAdmin) renderAdminArticles();
-      /* Stay on current tab, refresh if needed */
-      if (currentTab === 'admin' && !NovaAuth.isAdmin()) {
-        switchTab('home');
-      }
-    });
   }
 
   /* ─── TAB SWITCHING ─── */
   function switchTab(tab) {
     if (tab === currentTab && tab !== 'article') return;
-
-    /* Check admin access */
-    if (tab === 'admin' && !NovaAuth.isAdmin()) {
-      showToast('Admin access required. Sign in with admin credentials.', 'error');
-      NovaAuth.openModal('signIn');
-      return;
-    }
 
     const prevTab = currentTab;
     currentTab = tab;
@@ -188,8 +162,6 @@ const NovaApp = (() => {
     else if (tab === 'topics') renderTopics();
     else if (tab === 'article') {
       /* Show article - already handled */
-    } else if (tab === 'admin') {
-      renderAdminArticles();
     }
 
     /* Close sidebar on mobile */
@@ -337,79 +309,6 @@ const NovaApp = (() => {
       /* Animate scroll to new comment */
       els.commentsList.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-  }
-
-  /* ─── ADMIN ─── */
-  function publishArticle() {
-    const title = els.articleTitle.value.trim();
-    const category = els.articleCategory.value;
-    const excerpt = els.articleExcerpt.value.trim();
-    const content = els.articleContent.value.trim();
-    const image = els.articleImage.value.trim();
-
-    if (!title || !excerpt || !content) {
-      showToast('Please fill in title, excerpt, and content', 'error');
-      return;
-    }
-
-    const article = NovaData.addArticle({
-      title,
-      category,
-      excerpt,
-      content,
-      image: image || undefined,
-      author: NovaAuth.getUser()?.name || 'Admin'
-    });
-
-    if (article) {
-      els.articleTitle.value = '';
-      els.articleExcerpt.value = '';
-      els.articleContent.value = '';
-      els.articleImage.value = '';
-      els.articleCategory.value = 'technology';
-      renderAdminArticles();
-      showToast('Article published successfully!', 'success');
-
-      /* Refresh home/topics if visible */
-      if (document.getElementById('tab-home').classList.contains('active')) renderHome();
-      if (document.getElementById('tab-topics').classList.contains('active')) renderTopics();
-    }
-  }
-
-  function renderAdminArticles() {
-    const articles = NovaData.getArticles();
-    if (articles.length === 0) {
-      els.adminArticlesList.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:0.875rem;">No articles yet. Publish your first article!</div>';
-      return;
-    }
-
-    els.adminArticlesList.innerHTML = articles.map(a => `
-      <div class="admin-article-item" data-id="${a.id}">
-        <div class="admin-article-info">
-          <div class="admin-article-title">${escHtml(a.title)}</div>
-          <div class="admin-article-category">${capitalize(a.category)} · ${NovaData.formatDate(a.date)}</div>
-        </div>
-        <button class="admin-article-delete" data-id="${a.id}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          Delete
-        </button>
-      </div>
-    `).join('');
-
-    /* Bind delete events */
-    els.adminArticlesList.querySelectorAll('.admin-article-delete').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.id;
-        if (confirm('Are you sure you want to delete this article? This action cannot be undone.')) {
-          NovaData.deleteArticle(id);
-          renderAdminArticles();
-          showToast('Article deleted', 'info');
-          if (document.getElementById('tab-home').classList.contains('active')) renderHome();
-          if (document.getElementById('tab-topics').classList.contains('active')) renderTopics();
-        }
-      });
-    });
   }
 
   /* ─── THEME ─── */
