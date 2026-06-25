@@ -40,6 +40,9 @@ const NovaAuth = (() => {
       dropdownName: document.getElementById('dropdownName'),
       dropdownEmail: document.getElementById('dropdownEmail'),
       dropdownAvatar: document.getElementById('dropdownAvatar'),
+      dropdownAvatarWrap: document.getElementById('dropdownAvatarWrap'),
+      avatarUploadBtn: document.getElementById('avatarUploadBtn'),
+      avatarInput: document.getElementById('avatarInput'),
       dropdownSignOut: document.getElementById('dropdownSignOut'),
       sidebarSignOut: document.getElementById('sidebarSignOut'),
       profileTrigger: document.getElementById('profileTrigger'),
@@ -95,16 +98,16 @@ const NovaAuth = (() => {
       handleSignUp();
     });
 
-    /* Profile dropdown */
-    els.profileTrigger.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleProfileDropdown();
-    });
+    /* Profile dropdown toggled via inline onclick attribute */
     els.dropdownOverlay.addEventListener('click', closeProfileDropdown);
 
     /* Dropdown actions */
     els.dropdownSignOut.addEventListener('click', handleSignOut);
     els.sidebarSignOut.addEventListener('click', handleSignOut);
+
+    /* Avatar upload */
+    els.avatarUploadBtn.addEventListener('click', () => els.avatarInput.click());
+    els.avatarInput.addEventListener('change', handleAvatarUpload);
 
     /* Close dropdown on resize */
     window.addEventListener('resize', closeProfileDropdown);
@@ -137,12 +140,6 @@ const NovaAuth = (() => {
   }
 
   /* ─── PROFILE DROPDOWN ─── */
-  function toggleProfileDropdown() {
-    const isActive = els.profileDropdown.classList.contains('active');
-    if (isActive) closeProfileDropdown();
-    else openProfileDropdown();
-  }
-
   function openProfileDropdown() {
     els.profileDropdown.classList.add('active');
     els.dropdownOverlay.classList.add('active');
@@ -219,18 +216,58 @@ const NovaAuth = (() => {
     NovaData.setCurrentUser(user);
     updateUI(user);
     closeModal('signUp');
-    NovaApp.showToast(`Welcome to Nova, ${user.name}!`, 'success');
+    NovaApp.showToast(`Welcome to HAKHAMENSH-NEWS, ${user.name}!`, 'success');
     notifyListeners(user);
   }
 
   function handleSignOut() {
-    closeProfileDropdown();
+    /* Directly clear user and reload */
+    try { closeProfileDropdown(); } catch(e) {}
     currentUser = null;
-    NovaData.clearCurrentUser();
-    updateUI(null);
-    NovaApp.switchTab('home');
-    NovaApp.showToast('You have been signed out', 'info');
-    notifyListeners(null);
+    try {
+      const data = JSON.parse(localStorage.getItem('nova_data')) || {};
+      data.currentUser = null;
+      localStorage.setItem('nova_data', JSON.stringify(data));
+    } catch(e) {}
+    try { updateUI(null); } catch(e) {}
+    try { notifyListeners(null); } catch(e) {}
+    /* Force full page reload to reset all state */
+    location.reload();
+  }
+
+  /* ─── AVATAR UPLOAD ─── */
+  function handleAvatarUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!currentUser) return;
+
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const dataUrl = ev.target.result;
+      NovaData.saveAvatar(currentUser.id, dataUrl);
+
+      /* Update the avatar displays immediately */
+      setAvatarImage(els.profileAvatar, dataUrl);
+      setAvatarImage(els.dropdownAvatar, dataUrl);
+
+      NovaApp.showToast('Profile photo updated!', 'success');
+    };
+    reader.readAsDataURL(file);
+    /* Reset so the same file can be selected again */
+    e.target.value = '';
+  }
+
+  function setAvatarImage(el, dataUrl, user) {
+    const name = user ? user.name : (currentUser ? currentUser.name : '');
+    if (dataUrl) {
+      el.style.backgroundImage = `url(${dataUrl})`;
+      el.style.backgroundSize = 'cover';
+      el.style.backgroundPosition = 'center';
+      el.textContent = '';
+    } else {
+      el.style.backgroundImage = '';
+      el.textContent = name ? name.charAt(0).toUpperCase() : 'A';
+    }
   }
 
   /* ─── UI UPDATE ─── */
@@ -239,15 +276,26 @@ const NovaAuth = (() => {
       els.navAuthBtns.style.display = 'none';
       els.navProfile.style.display = 'flex';
       els.profileName.textContent = user.name;
-      els.profileAvatar.textContent = user.name.charAt(0).toUpperCase();
       els.dropdownName.textContent = user.name;
       els.dropdownEmail.textContent = user.email;
-      els.dropdownAvatar.textContent = user.name.charAt(0).toUpperCase();
+      /* Load avatar if saved */
+      const avatarUrl = NovaData.getAvatar(user.id);
+      if (avatarUrl) {
+        setAvatarImage(els.profileAvatar, avatarUrl, user);
+        setAvatarImage(els.dropdownAvatar, avatarUrl, user);
+      } else {
+        setAvatarImage(els.profileAvatar, null, user);
+        setAvatarImage(els.dropdownAvatar, null, user);
+      }
+      /* Show sidebar sign out */
+      els.sidebarSignOut.style.display = 'flex';
     } else {
       els.navAuthBtns.style.display = 'flex';
       els.navProfile.style.display = 'none';
-      els.dropdownAdmin.style.display = 'none';
-      els.sidebarAdmin.style.display = 'none';
+      els.dropdownAdmin?.style ? (els.dropdownAdmin.style.display = 'none') : null;
+      els.sidebarAdmin?.style ? (els.sidebarAdmin.style.display = 'none') : null;
+      /* Hide sidebar sign out */
+      els.sidebarSignOut.style.display = 'none';
     }
   }
 

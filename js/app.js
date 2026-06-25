@@ -19,7 +19,9 @@ const NovaApp = (() => {
       mainContent: document.getElementById('mainContent'),
       header: document.getElementById('header'),
       navContainer: document.getElementById('navContainer'),
-      navTabs: document.querySelectorAll('.nav-tab'),
+      tubelightTabs: document.querySelectorAll('.tubelight-tab'),
+      tubelightPill: document.getElementById('tubelightPill'),
+      tubelightLamp: document.getElementById('tubelightLamp'),
       tabContents: document.querySelectorAll('.tab-content'),
       sidebar: document.getElementById('sidebar'),
       sidebarOverlay: document.getElementById('sidebarOverlay'),
@@ -31,7 +33,7 @@ const NovaApp = (() => {
       featuredArticles: document.getElementById('featuredArticles'),
       topicArticles: document.getElementById('topicArticles'),
       topicChips: document.querySelectorAll('.topic-chip'),
-      articleDetail: document.getElementById('articleDetail'),
+articleDetail: document.getElementById('articleDetail'),
       articleBack: document.getElementById('articleBack'),
       commentsSection: document.getElementById('commentsSection'),
       commentsList: document.getElementById('commentsList'),
@@ -49,6 +51,9 @@ const NovaApp = (() => {
     initAuth();
     renderHome();
     renderTopics();
+
+    /* Position lamp on initial active tab */
+    requestAnimationFrame(() => moveLamp('home'));
   }
 
   /* ─── SHAKE ANIMATION ─── */
@@ -66,8 +71,8 @@ const NovaApp = (() => {
 
   /* ─── EVENTS ─── */
   function bindEvents() {
-    /* Tab switching */
-    els.navTabs.forEach(tab => {
+    /* Tubelight tab switching */
+    els.tubelightTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const target = tab.dataset.tab;
         switchTab(target);
@@ -129,26 +134,33 @@ const NovaApp = (() => {
 
   /* ─── TAB SWITCHING ─── */
   function switchTab(tab) {
-    if (tab === currentTab && tab !== 'article') return;
+    if (tab === currentTab) return;
 
-    const prevTab = currentTab;
+    const isTopicCategory = tab !== 'home' && tab !== 'article';
     currentTab = tab;
 
-    /* Update nav tabs */
-    els.navTabs.forEach(t => {
+    /* Update tubelight tabs active state */
+    els.tubelightTabs.forEach(t => {
       t.classList.toggle('active', t.dataset.tab === tab);
     });
 
+    /* Move lamp indicator to active tab */
+    moveLamp(tab);
+
+    /* Determine which tab-content section to show */
+    let targetSection = 'home';
+    if (tab === 'article') targetSection = 'article';
+    else if (tab === 'home') targetSection = 'home';
+    else targetSection = 'topics'; /* all + all topic categories → topics view */
+
     /* Switch content with animation */
     els.tabContents.forEach(tc => {
-      if (tc.id === `tab-${tab}`) {
+      if (tc.id === `tab-${targetSection}`) {
         tc.style.display = 'block';
-        /* Force reflow */
         void tc.offsetWidth;
         tc.classList.add('active');
       } else {
         tc.classList.remove('active');
-        /* Hide after animation would complete */
         setTimeout(() => {
           if (!tc.classList.contains('active')) {
             tc.style.display = 'none';
@@ -157,15 +169,42 @@ const NovaApp = (() => {
       }
     });
 
-    /* Refresh content */
-    if (tab === 'home') renderHome();
-    else if (tab === 'topics') renderTopics();
-    else if (tab === 'article') {
-      /* Show article - already handled */
+    /* Refresh content & apply filter */
+    if (tab === 'home') {
+      currentCategory = 'all';
+      renderHome();
+    } else if (tab === 'article') {
+      /* Article already handled */
+    } else {
+      /* 'all' or a topic category */
+      currentCategory = tab === 'all' ? 'all' : tab;
+      /* Update topic chips to match */
+      document.querySelectorAll('.topic-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.category === currentCategory);
+      });
+      renderTopics();
     }
 
     /* Close sidebar on mobile */
     closeSidebar();
+  }
+
+  /* ─── TUBELIGHT LAMP POSITIONING ─── */
+  function moveLamp(tab) {
+    if (!els.tubelightPill || !els.tubelightLamp) return;
+
+    const activeTab = els.tubelightPill.querySelector(`.tubelight-tab[data-tab="${tab}"]`);
+    if (!activeTab) return;
+
+    const pillRect = els.tubelightPill.getBoundingClientRect();
+    const tabRect = activeTab.getBoundingClientRect();
+
+    const left = tabRect.left - pillRect.left;
+    const width = tabRect.width;
+
+    els.tubelightLamp.style.left = `${left}px`;
+    els.tubelightLamp.style.width = `${width}px`;
+    els.tubelightPill.classList.add('has-active');
   }
 
   /* Expose for other modules */
@@ -174,7 +213,9 @@ const NovaApp = (() => {
   /* ─── RENDER HOME ─── */
   function renderHome() {
     const articles = NovaData.getArticles();
-    /* Featured = first 4 */
+
+
+/* Featured = first 4 */
     const featured = articles.slice(0, 4);
     els.featuredArticles.innerHTML = featured.map((a, i) => createArticleCard(a, i)).join('');
 
@@ -199,7 +240,8 @@ const NovaApp = (() => {
     });
   }
 
-  /* ─── ARTICLE CARD HTML ─── */
+
+/* ─── ARTICLE CARD HTML ─── */
   function createArticleCard(a, index = 0) {
     const img = a.image || 'https://images.unsplash.com/photo-1504711434969-e33886168d6c?w=800&h=400&fit=crop';
     const slideClass = index % 2 === 0 ? 'slide-in-left' : 'slide-in-right';
@@ -239,7 +281,7 @@ const NovaApp = (() => {
     articleTab.classList.add('active');
 
     /* Update nav tabs */
-    els.navTabs.forEach(t => t.classList.remove('active'));
+    els.tubelightTabs.forEach(t => t.classList.remove('active'));
 
     const img = article.image || 'https://images.unsplash.com/photo-1504711434969-e33886168d6c?w=800&h=400&fit=crop';
 

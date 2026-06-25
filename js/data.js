@@ -132,7 +132,7 @@ const NovaData = (() => {
       excerpt: article.excerpt,
       content: article.content,
       category: article.category || 'general',
-      author: article.author || 'Nova News',
+      author: article.author || 'HAKHAMENSH-NEWS',
       date: new Date().toISOString().split('T')[0],
       image: article.image || 'https://images.unsplash.com/photo-1504711434969-e33886168d6c?w=800&h=400&fit=crop',
       comments: []
@@ -234,6 +234,28 @@ const NovaData = (() => {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  /* ─── AVATAR ─── */
+  const AVATAR_KEY = 'nova_avatars';
+
+  function getAvatars() {
+    try {
+      return JSON.parse(localStorage.getItem(AVATAR_KEY)) || {};
+    } catch {
+      return {};
+    }
+  }
+
+  function saveAvatar(userId, dataUrl) {
+    const avatars = getAvatars();
+    avatars[userId] = dataUrl;
+    localStorage.setItem(AVATAR_KEY, JSON.stringify(avatars));
+  }
+
+  function getAvatar(userId) {
+    const avatars = getAvatars();
+    return avatars[userId] || null;
+  }
+
   /* ─── EXPORT ─── */
   return {
     init,
@@ -249,6 +271,8 @@ const NovaData = (() => {
     setCurrentUser,
     getCurrentUser,
     clearCurrentUser,
+    saveAvatar,
+    getAvatar,
     formatDate
   };
 })();
