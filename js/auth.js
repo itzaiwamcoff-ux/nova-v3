@@ -43,7 +43,6 @@ const NovaAuth = (() => {
       dropdownAvatarWrap: document.getElementById('dropdownAvatarWrap'),
       avatarUploadBtn: document.getElementById('avatarUploadBtn'),
       avatarInput: document.getElementById('avatarInput'),
-      dropdownSignOut: document.getElementById('dropdownSignOut'),
       sidebarSignOut: document.getElementById('sidebarSignOut'),
       profileTrigger: document.getElementById('profileTrigger'),
       commentSubmitBtn: document.getElementById('commentSubmitBtn')
@@ -101,9 +100,7 @@ const NovaAuth = (() => {
     /* Profile dropdown toggled via inline onclick attribute */
     els.dropdownOverlay.addEventListener('click', closeProfileDropdown);
 
-    /* Dropdown actions */
-    els.dropdownSignOut.addEventListener('click', handleSignOut);
-    els.sidebarSignOut.addEventListener('click', handleSignOut);
+    /* Dropdown actions — handled by inline onclick in index.html */
 
     /* Avatar upload */
     els.avatarUploadBtn.addEventListener('click', () => els.avatarInput.click());
